@@ -1,0 +1,114 @@
+# BeadStore CRD Schema
+# Olympian API: hermes.mt-olympus.io/v1alpha1
+#
+# Description: Git-synced issue tracker database
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: beadstores.hermes.mt-olympus.io
+spec:
+  group: hermes.mt-olympus.io
+  names:
+    kind: BeadStore
+    listKind: BeadStoreList
+    plural: beadstores
+    singular: beadstore
+    shortNames:
+      - bs
+      - bead
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: BeadStore manages a git-synced issue tracker database
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              description: BeadStoreSpec defines the desired state
+              required:
+                - repository
+                - prefix
+              properties:
+                repository:
+                  type: string
+                  description: Git repository URL for beads sync
+                branch:
+                  type: string
+                  description: Git branch to sync
+                  default: main
+                prefix:
+                  type: string
+                  description: Beads issue prefix for this store
+                  pattern: "^[a-z]{2,4}$"
+                syncInterval:
+                  type: string
+                  description: How often to sync with git
+                  default: "5m"
+                secretRef:
+                  type: object
+                  description: Git credentials secret reference
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+            status:
+              type: object
+              description: BeadStoreStatus defines the observed state
+              properties:
+                phase:
+                  type: string
+                  description: Current phase
+                  enum:
+                    - Initializing
+                    - Syncing
+                    - Ready
+                    - Error
+                lastSyncAt:
+                  type: string
+                  format: date-time
+                  description: Last successful sync time
+                lastCommit:
+                  type: string
+                  description: Git commit SHA of last sync
+                issueCount:
+                  type: integer
+                  description: Total number of issues in store
+                openCount:
+                  type: integer
+                  description: Number of open issues
+                message:
+                  type: string
+                  description: Human-readable status message
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Prefix
+          type: string
+          jsonPath: .spec.prefix
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Issues
+          type: integer
+          jsonPath: .status.issueCount
+        - name: Open
+          type: integer
+          jsonPath: .status.openCount
+        - name: Last Sync
+          type: date
+          jsonPath: .status.lastSyncAt
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
